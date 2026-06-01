@@ -1,192 +1,157 @@
 <?php
-
 require_once 'app/models/CartModel.php';
-require_once 'app/models/ProductModel.php';
 require_once 'app/models/OrderModel.php';
+require_once 'app/models/ProductModel.php';
 require_once 'app/config/database.php';
 
 class OrderController
 {
     private $cartModel;
-    private $productModel;
     private $orderModel;
+    private $productModel;
+    private $db;
 
     public function __construct()
     {
-        session_start();
-
+        $this->db = (new Database())->getConnection();
         $this->cartModel = new CartModel();
-        $this->productModel = new ProductModel((new Database())->getConnection());
         $this->orderModel = new OrderModel();
+        $this->productModel = new ProductModel($this->db);
     }
 
-    // COD CHECKOUT
-    public function checkoutCOD()
+    public function checkout()
     {
-        $userId = 1;
-
         $items = $this->cartModel->getCartProducts($this->productModel);
-
         if (empty($items)) {
-            echo "empty";
-            return;
+            header('Location: /Cart/index');
+            exit;
         }
-
-        $total = $this->cartModel->getTotalAmount($this->productModel);
-
-        $orderId = $this->orderModel->createOrder([
-            'user_id' => $userId,
-            'total' => $total,
-            'payment_method' => 'COD',
-            'status' => 'pending'
-        ]);
-
-        foreach ($items as $item) {
-            $this->orderModel->addOrderDetail($orderId, [
-                'product_id' => $item['product']->id,
-                'quantity'   => $item['quantity'],
-                'price'      => $item['product']->price
-            ]);
-        }
-
-        $this->cartModel->clearCart();
-
-        echo "success";
+        include 'app/views/order/checkout.php';
     }
 
-    // MOMO CREATE PAYMENT (FINAL FIX)
-    public function createMomo()
-{
-    $userId = 1;
-
-    $items = $this->cartModel->getCartProducts($this->productModel);
-
-    if (empty($items)) {
-        die("Giỏ hàng trống");
-    }
-
-    // FIX AMOUNT
-    $amount = (int)$this->cartModel->getTotalAmount($this->productModel);
-
-    if ($amount < 1000) {
-        die("MoMo yêu cầu tối thiểu 1000 VND");
-    }
-
-    $amount = (string)$amount;
-
-    // create order DB
-    $orderId = $this->orderModel->createOrder([
-        'user_id' => $userId,
-        'total' => $amount,
-        'payment_method' => 'MOMO',
-        'status' => 'pending'
-    ]);
-
-    foreach ($items as $item) {
-        $this->orderModel->addOrderDetail($orderId, [
-            'product_id' => $item['product']->id,
-            'quantity'   => $item['quantity'],
-            'price'      => $item['product']->price
-        ]);
-    }
-
-    $_SESSION['pending_order'] = $orderId;
-
-    
-    $endpoint = "https://test-payment.momo.vn/v2/gateway/api/create";
-
-    $partnerCode = "MOMO";
-    $accessKey   = "F8B6I9A6Y9G9";
-    $secretKey   = "g276077a763a42cbc7b83d3276f0c2d3";
-
-    $orderInfo = "ThanhToanDonHang_" . $orderId;
-
-    $requestId = (string)(time() . rand(100,999));
-    $orderIdMomo = $orderId . "_" . $requestId;
-
-    $baseUrl = "http://0a2ee78a90c6f9.lhr.life";
-
-    $redirectUrl = $baseUrl . "/order/momoReturn";
-    $ipnUrl      = $baseUrl . "/order/momoReturn";
-
-    $requestType = "captureWallet";
-    $extraData = "";
-
-    $rawHash = "accessKey=" . $accessKey .
-               "&amount=" . $amount .
-               "&extraData=" . $extraData .
-               "&ipnUrl=" . $ipnUrl .
-               "&orderId=" . $orderIdMomo .
-               "&orderInfo=" . $orderInfo .
-               "&partnerCode=" . $partnerCode .
-               "&redirectUrl=" . $redirectUrl .
-               "&requestId=" . $requestId .
-               "&requestType=" . $requestType;
-
-    $signature = hash_hmac("sha256", $rawHash, $secretKey);
-
-    $data = [
-        "partnerCode" => $partnerCode,
-        "requestId"   => $requestId,
-        "amount"      => $amount,
-        "orderId"     => $orderIdMomo,
-        "orderInfo"   => $orderInfo,
-        "redirectUrl" => $redirectUrl,
-        "ipnUrl"      => $ipnUrl,
-        "requestType" => $requestType,
-        "extraData"   => $extraData,
-        "lang"        => "vi",
-        "signature"   => $signature
-    ];
-
-    $ch = curl_init($endpoint);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Content-Type: application/json"
-    ]);
-
-    $result = curl_exec($ch);
-    curl_close($ch);
-
-    $json = json_decode($result, true);
-
-    if (!isset($json['payUrl'])) {
-        echo "<pre>";
-        print_r($json);
-        echo "</pre>";
-        die("MoMo FAIL - check signature / URL");
-    }
-
-    header("Location: " . $json['payUrl']);
-    exit();
-}
-
-
-    // MOMO RETURN
-    public function momoReturn()
+    public function processCheckout()
     {
-        $orderId = $_SESSION['pending_order'] ?? null;
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = htmlspecialchars(strip_tags($_POST['name']));
+            $phone = htmlspecialchars(strip_tags($_POST['phone']));
+            $address = htmlspecialchars(strip_tags($_POST['address']));
+            $payment_method = $_POST['payment_method'] ?? 'COD';
 
-        if (!$orderId) {
-            die("Invalid session");
+            $items = $this->cartModel->getCartProducts($this->productModel);
+            $totalAmount = $this->cartModel->getTotalAmount($this->productModel);
+
+            if (empty($items)) {
+                die('Giỏ hàng trống!');
+            }
+
+            $orderData = [
+                'user_id' => 1, 
+                'name' => $name,
+                'phone' => $phone,
+                'address' => $address,
+                'total' => $totalAmount,
+                'payment_method' => $payment_method,
+                'status' => 'Pending' 
+            ];
+
+            $orderId = $this->orderModel->createOrder($orderData);
+
+            foreach ($items as $item) {
+                $detailItem = [
+                    'product_id' => $item['product']->id,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['product']->price
+                ];
+                $this->orderModel->addOrderDetail($orderId, $detailItem);
+            }
+
+            if ($payment_method === 'COD') {
+                $this->cartModel->clearCart(); 
+                header('Location: /Order/orderConfirmation');
+                exit;
+            } elseif ($payment_method === 'VNPAY') {
+                $this->vnpayPayment($totalAmount, $orderId);
+            }
+        }
+    }
+
+    private function vnpayPayment($totalAmount, $orderId)
+    {
+        error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+
+        $vnp_TmnCode = "FJ1S4GTU"; 
+        $vnp_HashSecret = "IS00TZQPKFXYTW3FZXC2XUZXGHYJK913"; 
+        
+        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+   
+        $vnp_Returnurl = "http://localhost/Order/vnpayReturn"; 
+
+        $vnp_TxnRef = $orderId; 
+        $vnp_OrderInfo = "Thanh toan don hang " . $orderId;
+        $vnp_OrderType = "billpayment";
+        $vnp_Amount = $totalAmount * 100; 
+        $vnp_Locale = 'vn';
+        $vnp_IpAddr = $_SERVER['REMOTE_ADDR'];
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $vnp_TxnRef
+        );
+
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
 
-        $resultCode = $_GET['resultCode'] ?? -1;
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+        }
 
-        if ($resultCode == 0) {
+        header('Location: ' . $vnp_Url);
+        die();
+    }
 
-            $this->orderModel->updateStatus($orderId, "paid");
-
+    public function vnpayReturn()
+    {
+        if (isset($_GET['vnp_ResponseCode']) && $_GET['vnp_ResponseCode'] == '00') {
+            $orderId = $_GET['vnp_TxnRef'];
+            
+            $this->orderModel->updateStatus($orderId, 'Paid');
             $this->cartModel->clearCart();
-
-            unset($_SESSION['pending_order']);
-
-            echo "🎉 Thanh toán MoMo thành công!";
-            return;
+            
+            header('Location: /Order/orderConfirmation');
+            exit;
+        } else {
+            echo "<h2>Giao dịch thất bại hoặc đã bị hủy!</h2>";
+            echo "<a href='/Cart/index'>Quay lại giỏ hàng</a>"; 
         }
+    }
 
-        echo "❌ Thanh toán thất bại!";
+    public function orderConfirmation()
+    {
+        include 'app/views/order/orderConfirmation.php';
     }
 }
+?>

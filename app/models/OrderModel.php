@@ -13,12 +13,15 @@ class OrderModel
 
     public function createOrder($data)
     {
-        $sql = "INSERT INTO orders (user_id, total, payment_method, status)
-                VALUES (:user_id, :total, :payment_method, :status)";
+        $sql = "INSERT INTO orders (user_id, name, phone, address, total, payment_method, status)
+                VALUES (:user_id, :name, :phone, :address, :total, :payment_method, :status)";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bindParam(':user_id', $data['user_id']);
+        $stmt->bindParam(':name', $data['name']);
+        $stmt->bindParam(':phone', $data['phone']);
+        $stmt->bindParam(':address', $data['address']);
         $stmt->bindParam(':total', $data['total']);
         $stmt->bindParam(':payment_method', $data['payment_method']);
         $stmt->bindParam(':status', $data['status']);

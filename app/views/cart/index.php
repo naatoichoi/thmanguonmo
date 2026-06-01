@@ -27,7 +27,7 @@
                     <th>Ảnh</th>
                     <th>Tên sản phẩm</th>
                     <th>Giá</th>
-                    <th width="180">Số lượng</th>
+                    <th width="150">Số lượng</th>
                     <th>Thành tiền</th>
                     <th width="120">Thao tác</th>
                 </tr>
@@ -56,17 +56,19 @@
                     <td><?php echo number_format($product->price, 0, ',', '.'); ?> VNĐ</td>
 
                     <td>
-                        <form action="/Cart/update" method="POST">
+                        <form action="/Cart/update" method="POST" id="form-update-<?php echo $product->id; ?>">
                             <input type="hidden" name="product_id" value="<?php echo $product->id; ?>">
 
-                            <div class="d-flex gap-2">
-                                <input type="number"
-                                       name="quantity"
-                                       value="<?php echo $item['quantity']; ?>"
-                                       min="1"
-                                       class="form-control">
-
-                                <button class="btn btn-primary">Lưu</button>
+                            <div class="input-group input-group-sm" style="width: 120px;">
+                                <button class="btn btn-outline-secondary fw-bold" type="button" 
+                                        onclick="updateQty(<?php echo $product->id; ?>, -1)">-</button>
+                                
+                                <input type="text" name="quantity" id="qty-<?php echo $product->id; ?>" 
+                                       value="<?php echo $item['quantity']; ?>" 
+                                       class="form-control text-center fw-bold" readonly>
+                                
+                                <button class="btn btn-outline-secondary fw-bold" type="button" 
+                                        onclick="updateQty(<?php echo $product->id; ?>, 1)">+</button>
                             </div>
                         </form>
                     </td>
@@ -90,44 +92,28 @@
     </div>
 
     <div class="text-end mt-4">
-
         <h4>
             Tổng tiền:
-            <span class="text-success">
+            <span class="text-success fw-bold">
                 <?php echo number_format($total, 0, ',', '.'); ?> VNĐ
             </span>
         </h4>
 
-<!-- COD -->
-<button class="btn btn-success mt-3" onclick="checkoutCOD()">
-    Thanh toán COD
-</button>
-
-<!-- MOMO -->
-<a href="/order/createMomo"
-   class="btn btn-danger mt-3">
-    Thanh toán MoMo
-</a>
-
+        <a href="/Order/checkout" class="btn btn-primary mt-3 px-4 py-2 fw-bold">
+            Tiến hành thanh toán
+        </a>
     </div>
 
     <script>
-        function checkoutCOD() {
-            fetch('/order/checkoutCOD')
-                .then(res => res.text())
-                .then(data => {
+        function updateQty(productId, change) {
+            const input = document.getElementById('qty-' + productId);
+            let currentQty = parseInt(input.value);
+            let newQty = currentQty + change;
 
-                    if (data === 'success') {
-                        alert('🎉 Đặt hàng thành công!');
-                        window.location.href = '/Cart/index';
-                    } else if (data === 'empty') {
-                        alert('Giỏ hàng trống!');
-                    } else {
-                        alert('Có lỗi xảy ra!');
-                    }
-
-                })
-                .catch(() => alert('Lỗi hệ thống!'));
+            if (newQty >= 1) {
+                input.value = newQty;
+                document.getElementById('form-update-' + productId).submit();
+            }
         }
     </script>
 
