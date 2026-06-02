@@ -854,3 +854,39 @@ body {
     background: #e11d48;
     color: white;
 }
+
+/* Ép thẻ card tự giãn chiều cao theo nội dung */
+.product-card {
+    height: auto !important; 
+    min-height: 400px; /* Đảm bảo form vẫn đều */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Đẩy các nút bấm xuống sát đáy để các thẻ luôn đều nhau */
+.product-actions {
+    margin-top: auto !important;
+    padding-top: 15px;
+}
+
+/* Cho tên sản phẩm hiển thị thoải mái */
+.product-name {
+    font-size: 1.1rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 10px !important;
+    display: block !important;
+    height: auto !important;
+}
+
+/* Khóa chuẩn phần mô tả đúng 2 dòng */
+.product-description {
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    height: 3rem !important; /* 1.5 x 2 dòng = 3rem */
+    margin-bottom: 10px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    white-space: normal !important;
+}

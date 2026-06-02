@@ -37,7 +37,6 @@
                 <label for="category_id" class="form-label">Danh mục</label>
                 <select id="category_id" name="category_id" class="form-control" required>
                     <option value="">-- Chọn danh mục --</option>
-
                     <?php foreach ($categories as $category): ?>
                         <option value="<?php echo $category->id; ?>">
                             <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
@@ -61,7 +60,6 @@
                 <button type="submit" class="btn btn-primary">
                     Thêm sản phẩm
                 </button>
-
                 <a href="/Product/list" class="btn btn-outline-light">
                     Quay lại danh sách
                 </a>

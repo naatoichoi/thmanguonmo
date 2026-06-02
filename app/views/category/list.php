@@ -5,68 +5,42 @@
     <p>Quản lý các danh mục sản phẩm</p>
 </div>
 
-<div class="d-flex justify-content-end gap-2 mb-4">
-    <a href="/Category/add" class="btn btn-primary btn-add-product">
-        + Thêm danh mục
-    </a>
-
-    <a href="/Product/list" class="btn btn-outline-light">
-        Quay lại sản phẩm
-    </a>
+<div class="text-end mb-4">
+    <a href="/Category/add" class="btn btn-primary rounded-pill px-4">+ Thêm danh mục</a>
+    <a href="/Product/list" class="btn btn-outline-primary rounded-pill px-4 ms-2">Quay lại sản phẩm</a>
 </div>
 
-<?php if (empty($categories)): ?>
-    <div class="empty-box">
-        Chưa có danh mục nào. Hãy bấm nút thêm danh mục để tạo mới.
-    </div>
-<?php else: ?>
-    <div class="table-card">
-        <table class="table table-hover align-middle category-table mb-0">
-            <thead>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover table-striped mb-0">
+            <thead class="table-light">
                 <tr>
-                    <th style="width: 100px;">STT</th>
-                    <th>Tên danh mục</th>
-                    <th>Mô tả</th>
-                    <th style="width: 180px;">Thao tác</th>
+                    <th class="py-3 px-4 text-center">STT</th>
+                    <th class="py-3">Tên danh mục</th>
+                    <th class="py-3">Mô tả</th>
+                    <th class="py-3 text-center">Thao tác</th>
                 </tr>
             </thead>
-
             <tbody>
                 <?php $stt = 1; ?>
                 <?php foreach ($categories as $category): ?>
                     <tr>
-                        <td>
-                            <span class="product-id">
-                                <?php echo $stt++; ?>
-                            </span>
-                        </td>
-
-                        <td class="fw-bold">
+                        <td class="py-3 px-4 text-center align-middle"><?php echo $stt++; ?></td>
+                        <td class="py-3 align-middle fw-bold">
                             <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
                         </td>
-
-                        <td>
-                            <?php echo htmlspecialchars($category->description, ENT_QUOTES, 'UTF-8'); ?>
+                        <td class="py-3 align-middle">
+                            <?php echo htmlspecialchars($category->description ?? '', ENT_QUOTES, 'UTF-8'); ?>
                         </td>
-
-                        <td>
-                            <div class="d-flex gap-2">
-                                <a href="/Category/edit/<?php echo $category->id; ?>" class="btn btn-primary btn-sm">
-                                    Sửa
-                                </a>
-
-                                <a href="/Category/delete/<?php echo $category->id; ?>"
-                                   class="btn btn-danger btn-sm"
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
-                                    Xóa
-                                </a>
-                            </div>
+                        <td class="py-3 text-center align-middle">
+                            <a href="/Category/edit/<?php echo $category->id; ?>" class="btn btn-primary btn-sm rounded-pill px-3">Sửa</a>
+                            <a href="/Category/delete/<?php echo $category->id; ?>" class="btn btn-danger btn-sm rounded-pill px-3" onclick="return confirm('Bạn có chắc muốn xóa danh mục này?');">Xóa</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
-<?php endif; ?>
+</div>
 
 <?php include 'app/views/shares/footer.php'; ?>

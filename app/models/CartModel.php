@@ -1,7 +1,7 @@
 <?php
 
 require_once 'app/config/redis.php';
-
+require_once 'app/helpers/SessionHelper.php';
 class CartModel
 {
     private $redis;
@@ -10,12 +10,14 @@ class CartModel
     public function __construct()
     {
         $this->redis = RedisConnection::getConnection();
+        SessionHelper::start(); 
     }
 
     private function getCartKey()
     {
-        return "cart:" . $this->userId;
-    }
+        $userId = $_SESSION['user_id'] ?? 'guest'; 
+        return "cart:" . $userId;   
+     }
 
     public function addToCart($productId, $quantity = 1)
     {

@@ -45,7 +45,7 @@ class OrderController
             }
 
             $orderData = [
-                'user_id' => 1, 
+                'user_id' => $_SESSION['user_id'] ?? 0,
                 'name' => $name,
                 'phone' => $phone,
                 'address' => $address,

@@ -41,22 +41,24 @@
 
             <div class="d-flex gap-2 mt-4">
 
-                    <a href="/Cart/add/<?php echo $product->id; ?>"
-                    class="btn btn-success">
-                        Thêm vào giỏ hàng
-                    </a>
+                <a href="/Cart/add/<?php echo $product->id; ?>"
+                   class="btn btn-success">
+                    Thêm vào giỏ hàng
+                </a>
 
+                <?php if (SessionHelper::isAdmin()): ?>
                     <a href="/Product/edit/<?php echo $product->id; ?>"
-                    class="btn btn-primary">
+                       class="btn btn-primary">
                         Sửa sản phẩm
                     </a>
+                <?php endif; ?>
 
-                    <a href="/Product/list"
-                    class="btn btn-outline-light">
-                        Quay lại danh sách
-                    </a>
+                <a href="/Product/list"
+                   class="btn btn-outline-light">
+                    Quay lại danh sách
+                </a>
 
-</div>
+            </div>
         </div>
     </div>
 </div>
@@ -77,7 +79,7 @@
                          class="detail-sub-image thumbnail-image"
                          onclick="swapMainImage(this)">
                 </div>
-            <?php endforeach; ?>
+            <?php endforeach; ?> 
         </div>
     <?php endif; ?>
 </div>
@@ -104,7 +106,6 @@
             newMainImage.className = 'detail-main-image';
 
             mainPlaceholder.replaceWith(newMainImage);
-
             thumbnail.parentElement.remove();
         }
 

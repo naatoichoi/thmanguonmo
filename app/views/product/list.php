@@ -5,11 +5,13 @@
     <p>Quản lý sản phẩm</p>
 </div>
 
-<div class="text-end mb-4">
-    <a href="/Product/add" class="btn btn-primary btn-add-product">
-        + Thêm sản phẩm
-    </a>
-</div>
+<?php if (SessionHelper::isAdmin()): ?>
+    <div class="text-end mb-4">
+        <a href="/Product/add" class="btn btn-primary btn-add-product">
+            + Thêm sản phẩm
+        </a>
+    </div>
+<?php endif; ?>
 
 <?php if (empty($products)): ?>
     <div class="empty-box">
@@ -84,16 +86,18 @@
                         Chi tiết
                     </a>
 
-                    <a href="/Product/edit/<?php echo $product->id; ?>"
-                       class="btn-product btn-edit">
-                        Sửa
-                    </a>
+                    <?php if (SessionHelper::isAdmin()): ?>
+                        <a href="/Product/edit/<?php echo $product->id; ?>"
+                           class="btn-product btn-edit">
+                            Sửa
+                        </a>
 
-                    <a href="/Product/delete/<?php echo $product->id; ?>"
-                       class="btn-product btn-delete"
-                       onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
-                        Xóa
-                    </a>
+                        <a href="/Product/delete/<?php echo $product->id; ?>"
+                           class="btn-product btn-delete"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
+                            Xóa
+                        </a>
+                    <?php endif; ?>
 
                 </div>
 

@@ -3,6 +3,7 @@
 require_once 'app/config/database.php';
 require_once 'app/models/ProductModel.php';
 require_once 'app/models/CartModel.php';
+require_once 'app/helpers/SessionHelper.php';
 
 class CartController
 {
@@ -19,6 +20,11 @@ class CartController
 
     public function index()
     {
+        if (!SessionHelper::isLoggedIn()) {
+            header('Location: /Account/login');
+            exit;
+        }
+
         $items = $this->cartModel->getCartProducts($this->productModel);
         $total = $this->cartModel->getTotalAmount($this->productModel);
 
@@ -27,8 +33,12 @@ class CartController
 
     public function add($productId)
     {
-        $productId = (int)$productId;
+        if (!SessionHelper::isLoggedIn()) {
+            header('Location: /Account/login');
+            exit;
+        }
 
+        $productId = (int)$productId;
         $product = $this->productModel->getProductById($productId);
 
         if (!$product) {
@@ -44,7 +54,6 @@ class CartController
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
             $productId = (int)($_POST['product_id'] ?? 0);
             $quantity = (int)($_POST['quantity'] ?? 1);
 
@@ -84,3 +93,4 @@ class CartController
         exit();
     }
 }
+?>
