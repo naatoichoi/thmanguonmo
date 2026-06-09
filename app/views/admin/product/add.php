@@ -2,7 +2,7 @@
 
 <div class="form-card">
     <div class="form-card-header">
-        <h3>Thêm sản phẩm mới</h3>
+        <h3>Thêm sản phẩm mới - Admin</h3>
         <p>Nhập thông tin sản phẩm</p>
     </div>
 
@@ -36,7 +36,7 @@
                 <button type="submit" class="btn btn-primary">
                     Thêm sản phẩm
                 </button>
-                <a href="/Product/list" class="btn btn-outline-light">
+                <a href="/Admin/product/list" class="btn btn-outline-light">
                     Quay lại danh sách
                 </a>
             </div>
@@ -49,10 +49,11 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const token = localStorage.getItem('jwtToken');
+    const userRole = localStorage.getItem('userRole');
     
-    if (!token) {
-        alert('Vui lòng đăng nhập');
-        location.href = '/Account/login';
+    if (!token || userRole !== 'admin') {
+        alert('Bạn không có quyền truy cập trang này');
+        location.href = '/Product/list';
         return;
     }
 
@@ -96,19 +97,19 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             if (data.message === 'Product created successfully') {
-                location.href = '/Product/list';
+                location.href = '/Admin/product/list';
             } else if (data.errors) {
-                const errorDiv = document.getElementById('error-message');
-                errorDiv.style.display = 'block';
-                const errorList = Object.values(data.errors).join('<br>');
-                errorDiv.innerHTML = errorList;
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').innerHTML = Object.values(data.errors).join('<br>');
             } else {
-                alert('Thêm sản phẩm thất bại');
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = data.message || 'Có lỗi xảy ra';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra');
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').textContent = 'Có lỗi xảy ra';
         });
     });
 });

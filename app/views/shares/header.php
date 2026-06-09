@@ -49,8 +49,21 @@
                                 <a class="nav-link text-danger fw-bold" href="/Account/logout">Đăng xuất</a>
                             </li>
                         <?php else: ?>
-                            <li class="nav-item"><a class="nav-link" href="/Account/login">Đăng nhập</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/Account/register">Đăng ký</a></li>
+                            <li class="nav-item" id="nav-login">
+                                <a class="nav-link" href="/Account/login">Đăng nhập</a>
+                            </li>
+                            <li class="nav-item" id="nav-register">
+                                <a class="nav-link" href="/Account/register">Đăng ký</a>
+                            </li>
+                            <li class="nav-item" id="nav-jwt-admin" style="display: none;">
+                                <a class="nav-link text-warning fw-bold" href="/Admin/product/list">👨‍💼 Admin</a>
+                            </li>
+                            <li class="nav-item" id="nav-jwt-user" style="display: none;">
+                                <span class="nav-link fw-bold text-success" id="jwt-username"></span>
+                            </li>
+                            <li class="nav-item" id="nav-jwt-logout" style="display: none;">
+                                <a class="nav-link text-danger fw-bold" href="#" onclick="logoutJWT(); return false;">Đăng xuất</a>
+                            </li>
                         <?php endif; ?>
                     </ul>
                 </div>
@@ -58,3 +71,39 @@
         </nav>
     </header>
     <main class="container mt-5 mb-5">
+
+<script>
+function logoutJWT() {
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('userRole');
+    location.href = '/Product/list';
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const token = localStorage.getItem('jwtToken');
+    const userRole = localStorage.getItem('userRole');
+    const sessionUser = '<?php echo SessionHelper::isLoggedIn() ? "true" : "false"; ?>';
+    
+    // Nếu không có session user nhưng có JWT token, hiển thị JWT controls
+    if (token && sessionUser !== 'true') {
+        document.getElementById('nav-login').style.display = 'none';
+        document.getElementById('nav-register').style.display = 'none';
+        document.getElementById('nav-jwt-user').style.display = 'block';
+        document.getElementById('nav-jwt-logout').style.display = 'block';
+        
+        // Hiển thị admin link nếu user là admin
+        if (userRole === 'admin') {
+            document.getElementById('nav-jwt-admin').style.display = 'block';
+        }
+        
+        // Thử decode và hiển thị username từ token
+        try {
+            const parts = token.split('.');
+            const decoded = JSON.parse(atob(parts[1]));
+            document.getElementById('jwt-username').textContent = 'Xin chào, ' + (decoded.username || 'Người dùng') + ' (' + userRole + ')';
+        } catch(e) {
+            document.getElementById('jwt-username').textContent = 'Xin chào, Người dùng (' + userRole + ')';
+        }
+    }
+});
+</script>

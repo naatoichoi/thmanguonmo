@@ -3,85 +3,41 @@
 <div class="form-card">
     <div class="form-card-header">
         <h3>Sửa sản phẩm</h3>
-        <p>Cập nhật thông tin sản phẩm và hình ảnh</p>
+        <p>Cập nhật thông tin sản phẩm</p>
     </div>
 
     <div class="form-card-body">
-        <form method="POST" action="/Product/update" enctype="multipart/form-data">
-            <input type="hidden" name="id" value="<?php echo $product->id; ?>">
+        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+
+        <form id="edit-product-form">
+            <input type="hidden" id="id" name="id">
 
             <div class="mb-3">
                 <label for="name" class="form-label">Tên sản phẩm</label>
-                <input type="text" id="name" name="name"
-                       class="form-control"
-                       value="<?php echo htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8'); ?>"
-                       required>
+                <input type="text" id="name" name="name" class="form-control" required>
             </div>
 
             <div class="mb-3">
                 <label for="description" class="form-label">Mô tả</label>
-                <textarea id="description" name="description"
-                          class="form-control"
-                          rows="4"
-                          required><?php echo htmlspecialchars($product->description, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                <textarea id="description" name="description" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="mb-3">
                 <label for="price" class="form-label">Giá</label>
-                <input type="number" id="price" name="price"
-                       class="form-control"
-                       step="0.01"
-                       value="<?php echo htmlspecialchars($product->price, ENT_QUOTES, 'UTF-8'); ?>"
-                       required>
+                <input type="number" id="price" name="price" class="form-control" step="0.01" required>
             </div>
 
             <div class="mb-3">
                 <label for="category_id" class="form-label">Danh mục</label>
                 <select id="category_id" name="category_id" class="form-control" required>
                     <option value="">-- Chọn danh mục --</option>
-
-                    <?php foreach ($categories as $category): ?>
-                        <option value="<?php echo $category->id; ?>"
-                            <?php echo ($category->id == $product->category_id) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
-                        </option>
-                    <?php endforeach; ?>
                 </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Ảnh chính hiện tại</label>
-
-                <?php if (!empty($product->image)): ?>
-                    <div class="edit-current-image mb-2">
-                        <img src="/assets/images/products/<?php echo htmlspecialchars($product->image, ENT_QUOTES, 'UTF-8'); ?>"
-                             alt="<?php echo htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8'); ?>">
-                    </div>
-                <?php else: ?>
-                    <div class="empty-box mb-2">
-                        Sản phẩm chưa có ảnh chính.
-                    </div>
-                <?php endif; ?>
-
-                <label for="image" class="form-label">Thay ảnh chính mới</label>
-                <input type="file" id="image" name="image" class="form-control" accept="image/*">
-                <small class="text-muted">Nếu không chọn ảnh mới, ảnh chính cũ sẽ được giữ nguyên.</small>
-            </div>
-
-            <div class="mb-4">
-                <label for="images" class="form-label">Thêm ảnh phụ mới</label>
-                <input type="file" id="images" name="images[]" class="form-control" accept="image/*" multiple>
-                <small class="text-muted">Có thể chọn nhiều ảnh cùng lúc. Ảnh mới sẽ được thêm vào danh sách ảnh cũ.</small>
             </div>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     Lưu thay đổi
                 </button>
-
-                <a href="/Product/show/<?php echo $product->id; ?>" class="btn btn-outline-light">
-                    Xem chi tiết
-                </a>
 
                 <a href="/Product/list" class="btn btn-outline-light">
                     Quay lại danh sách
@@ -91,30 +47,98 @@
     </div>
 </div>
 
-<div class="product-detail-card mt-4">
-    <h3 class="section-title">Ảnh phụ hiện tại</h3>
-
-    <?php if (empty($images)): ?>
-        <div class="empty-box">
-            Sản phẩm này chưa có ảnh phụ.
-        </div>
-    <?php else: ?>
-        <div class="detail-image-grid">
-            <?php foreach ($images as $image): ?>
-                <div class="detail-sub-image-box image-manage-box">
-                    <img src="/assets/images/products/<?php echo htmlspecialchars($image->image, ENT_QUOTES, 'UTF-8'); ?>"
-                         alt="Ảnh phụ sản phẩm"
-                         class="detail-sub-image">
-
-                    <a href="/Product/deleteImage/<?php echo $image->id; ?>/<?php echo $product->id; ?>"
-                       class="btn btn-danger btn-sm image-delete-btn"
-                       onclick="return confirm('Bạn có chắc chắn muốn xóa ảnh này?');">
-                        Xóa ảnh
-                    </a>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-</div>
-
 <?php include 'app/views/shares/footer.php'; ?>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const token = localStorage.getItem('jwtToken');
+    
+    if (!token) {
+        alert('Vui lòng đăng nhập');
+        location.href = '/Account/login';
+        return;
+    }
+
+    // Lấy product ID từ URL
+    const productId = <?= isset($editId) ? $editId : 'null'; ?>;
+    
+    if (!productId) {
+        alert('Lỗi: Không tìm thấy ID sản phẩm');
+        location.href = '/Product/list';
+        return;
+    }
+
+    // Tải thông tin sản phẩm
+    fetch(`/api/product/${productId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('id').value = data.id;
+        document.getElementById('name').value = data.name;
+        document.getElementById('description').value = data.description;
+        document.getElementById('price').value = data.price;
+        document.getElementById('category_id').value = data.category_id;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Không thể tải thông tin sản phẩm');
+    });
+
+    // Tải danh sách danh mục
+    fetch('/api/category', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const categorySelect = document.getElementById('category_id');
+        data.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error:', error));
+
+    // Xử lý form submit
+    document.getElementById('edit-product-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(this);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+            jsonData[key] = value;
+        });
+
+        fetch(`/api/product/${jsonData.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === 'Product updated successfully') {
+                location.href = '/Product/list';
+            } else {
+                const errorDiv = document.getElementById('error-message');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = data.message || 'Cập nhật sản phẩm thất bại';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra');
+        });
+    });
+});
+</script>

@@ -1,12 +1,14 @@
 <?php include 'app/views/shares/header.php'; ?>
 
 <div class="page-title text-center mb-4">
-    <h1>Danh sách sản phẩm</h1>
-    <p>Quản lý sản phẩm</p>
+    <h1>Quản lý sản phẩm - Admin</h1>
+    <p>Thêm, sửa, xóa sản phẩm</p>
 </div>
 
 <div class="text-end mb-4">
-    <!-- Không hiện nút Thêm sản phẩm trên trang User -->
+    <a href="/Admin/product/add" class="btn btn-primary btn-add-product">
+        + Thêm sản phẩm mới
+    </a>
 </div>
 
 <div id="product-list" class="product-grid">
@@ -22,10 +24,11 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const token = localStorage.getItem('jwtToken');
+    const userRole = localStorage.getItem('userRole');
     
-    if (!token) {
-        alert('Vui lòng đăng nhập');
-        location.href = '/Account/login';
+    if (!token || userRole !== 'admin') {
+        alert('Bạn không có quyền truy cập trang này');
+        location.href = '/Product/list';
         return;
     }
 
@@ -40,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function() {
     .then(response => {
         if (response.status === 401) {
             localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userRole');
             location.href = '/Account/login';
             return;
         }
@@ -84,12 +88,15 @@ document.addEventListener("DOMContentLoaded", function() {
                         ${product.category_name || 'Chưa có danh mục'}
                     </p>
                     <div class="product-actions">
-                        <button onclick="addToCart(${product.id})" class="btn-product btn-cart">
-                            🛒 Thêm vào giỏ
-                        </button>
                         <a href="/Product/show/${product.id}" class="btn-product btn-detail">
                             Chi tiết
                         </a>
+                        <a href="/Admin/product/edit?id=${product.id}" class="btn-product btn-edit">
+                            ✏️ Sửa
+                        </a>
+                        <button class="btn-product btn-delete" onclick="deleteProduct(${product.id})">
+                            🗑️ Xóa
+                        </button>
                     </div>
                 `;
                 productList.appendChild(productCard);
@@ -103,46 +110,29 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function addToCart(productId) {
-    const token = localStorage.getItem('jwtToken');
-    
-    if (!token) {
-        alert('Vui lòng đăng nhập để thêm vào giỏ');
-        location.href = '/Account/login';
-        return;
+function deleteProduct(id) {
+    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+        const token = localStorage.getItem('jwtToken');
+        
+        fetch(`/api/product/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === 'Product deleted successfully') {
+                location.reload();
+            } else {
+                alert('Xóa sản phẩm thất bại');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra');
+        });
     }
-    
-    // Gửi request với JWT token
-    fetch(`/Cart/add/${productId}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        }
-    })
-    .then(response => {
-        if (response.status === 401) {
-            alert('Bạn cần đăng nhập');
-            location.href = '/Account/login';
-            return;
-        }
-        if (response.status === 404) {
-            alert('Sản phẩm không tồn tại');
-            return;
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data && data.success) {
-            alert('Đã thêm sản phẩm vào giỏ hàng');
-            location.href = '/Cart/index';
-        } else {
-            alert('Có lỗi khi thêm vào giỏ hàng: ' + (data?.message || ''));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Có lỗi xảy ra');
-    });
 }
 </script>

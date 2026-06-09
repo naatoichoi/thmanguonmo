@@ -6,11 +6,9 @@
             <div class="card-body p-5 text-center">
                 <h3 class="fw-bold mb-4">Đăng nhập</h3>
                 
-                <?php if (isset($error)): ?>
-                    <div class="alert alert-danger"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
+                <div id="error-message" class="alert alert-danger" style="display: none;"></div>
 
-                <form action="/Account/checkLogin" method="post">
+                <form id="login-form">
                     <div class="mb-3">
                         <input type="text" name="username" class="form-control form-control-lg" placeholder="Tên đăng nhập" required />
                     </div>
@@ -45,3 +43,43 @@
 </div>
 
 <?php include 'app/views/shares/footer.php'; ?>
+<script>
+document.getElementById('login-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+    const jsonData = {};
+    formData.forEach((value, key) => {
+        jsonData[key] = value;
+    });
+
+    fetch('/Account/checkLogin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jsonData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.token) {
+            localStorage.setItem('jwtToken', data.token);
+            localStorage.setItem('userRole', data.role || 'user');
+            
+            // Redirect dựa trên role
+            if (data.role === 'admin') {
+                location.href = '/Admin/product/list';
+            } else {
+                location.href = '/Product/list';
+            }
+        } else {
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').textContent = data.message || 'Đăng nhập thất bại';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Có lỗi xảy ra';
+    });
+});
+</script>

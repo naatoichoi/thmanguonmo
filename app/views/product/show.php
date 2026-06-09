@@ -41,10 +41,17 @@
 
             <div class="d-flex gap-2 mt-4">
 
-                <a href="/Cart/add/<?php echo $product->id; ?>"
+                <button type="button" onclick="addToCart(<?php echo $product->id; ?>)"
                    class="btn btn-success">
                     Thêm vào giỏ hàng
-                </a>
+                </button>
+
+                <div id="admin-edit-btn" style="display: none;">
+                    <a href="/Admin/product/edit?id=<?php echo $product->id; ?>"
+                       class="btn btn-primary">
+                        Sửa sản phẩm
+                    </a>
+                </div>
 
                 <?php if (SessionHelper::isAdmin()): ?>
                     <a href="/Product/edit/<?php echo $product->id; ?>"
@@ -85,6 +92,13 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const userRole = localStorage.getItem('userRole');
+        if (userRole === 'admin') {
+            document.getElementById('admin-edit-btn').style.display = 'block';
+        }
+    });
+
     function swapMainImage(thumbnail) {
         let mainImage = document.getElementById('mainProductImage');
         let mainPlaceholder = document.getElementById('mainProductImagePlaceholder');
@@ -117,6 +131,49 @@
         if (thumbnail.parentElement) {
             thumbnail.parentElement.classList.add('active-thumbnail');
         }
+    }
+
+    function addToCart(productId) {
+        const token = localStorage.getItem('jwtToken');
+        
+        if (!token) {
+            alert('Vui lòng đăng nhập để thêm vào giỏ');
+            location.href = '/Account/login';
+            return;
+        }
+        
+        // Gửi request với JWT token
+        fetch(`/Cart/add/${productId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(response => {
+            if (response.status === 401) {
+                alert('Bạn cần đăng nhập');
+                location.href = '/Account/login';
+                return;
+            }
+            if (response.status === 404) {
+                alert('Sản phẩm không tồn tại');
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.success) {
+                alert('Đã thêm sản phẩm vào giỏ hàng');
+                location.href = '/Cart/index';
+            } else {
+                alert('Có lỗi khi thêm vào giỏ hàng: ' + (data?.message || ''));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra');
+        });
     }
 </script>
 

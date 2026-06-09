@@ -2,14 +2,16 @@
 
 <div class="form-card">
     <div class="form-card-header">
-        <h3>Thêm sản phẩm mới</h3>
-        <p>Nhập thông tin sản phẩm</p>
+        <h3>Sửa sản phẩm - Admin</h3>
+        <p>Cập nhật thông tin sản phẩm</p>
     </div>
 
     <div class="form-card-body">
         <div id="error-message" class="alert alert-danger" style="display: none;"></div>
 
-        <form id="add-product-form">
+        <form id="edit-product-form">
+            <input type="hidden" id="id" name="id">
+
             <div class="mb-3">
                 <label for="name" class="form-label">Tên sản phẩm</label>
                 <input type="text" id="name" name="name" class="form-control" required>
@@ -22,7 +24,7 @@
 
             <div class="mb-3">
                 <label for="price" class="form-label">Giá</label>
-                <input type="number" id="price" name="price" step="0.01" class="form-control" required>
+                <input type="number" id="price" name="price" class="form-control" step="0.01" required>
             </div>
 
             <div class="mb-3">
@@ -34,9 +36,10 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
-                    Thêm sản phẩm
+                    Lưu thay đổi
                 </button>
-                <a href="/Product/list" class="btn btn-outline-light">
+
+                <a href="/Admin/product/list" class="btn btn-outline-light">
                     Quay lại danh sách
                 </a>
             </div>
@@ -49,12 +52,43 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const token = localStorage.getItem('jwtToken');
+    const userRole = localStorage.getItem('userRole');
     
-    if (!token) {
-        alert('Vui lòng đăng nhập');
-        location.href = '/Account/login';
+    if (!token || userRole !== 'admin') {
+        alert('Bạn không có quyền truy cập trang này');
+        location.href = '/Product/list';
         return;
     }
+
+    // Lấy product ID từ URL query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+    
+    if (!productId) {
+        alert('Lỗi: Không tìm thấy ID sản phẩm');
+        location.href = '/Admin/product/list';
+        return;
+    }
+
+    // Tải thông tin sản phẩm
+    fetch(`/api/product/${productId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('id').value = data.id;
+        document.getElementById('name').value = data.name;
+        document.getElementById('description').value = data.description;
+        document.getElementById('price').value = data.price;
+        document.getElementById('category_id').value = data.category_id;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Không thể tải thông tin sản phẩm');
+    });
 
     // Tải danh sách danh mục
     fetch('/api/category', {
@@ -76,17 +110,18 @@ document.addEventListener("DOMContentLoaded", function() {
     .catch(error => console.error('Error:', error));
 
     // Xử lý form submit
-    document.getElementById('add-product-form').addEventListener('submit', function(event) {
+    document.getElementById('edit-product-form').addEventListener('submit', function(event) {
         event.preventDefault();
         
+        const productId = document.getElementById('id').value;
         const formData = new FormData(this);
         const jsonData = {};
         formData.forEach((value, key) => {
             jsonData[key] = value;
         });
 
-        fetch('/api/product', {
-            method: 'POST',
+        fetch(`/api/product/${productId}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token
@@ -95,20 +130,20 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.message === 'Product created successfully') {
-                location.href = '/Product/list';
+            if (data.message === 'Product updated successfully') {
+                location.href = '/Admin/product/list';
             } else if (data.errors) {
-                const errorDiv = document.getElementById('error-message');
-                errorDiv.style.display = 'block';
-                const errorList = Object.values(data.errors).join('<br>');
-                errorDiv.innerHTML = errorList;
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').innerHTML = Object.values(data.errors).join('<br>');
             } else {
-                alert('Thêm sản phẩm thất bại');
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = data.message || 'Có lỗi xảy ra';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra');
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').textContent = 'Có lỗi xảy ra';
         });
     });
 });

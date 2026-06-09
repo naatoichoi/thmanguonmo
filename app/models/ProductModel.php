@@ -13,7 +13,7 @@ class ProductModel
     // Lấy danh sách sản phẩm
     public function getProducts()
     {
-        $query = "SELECT p.id, p.name, p.description, p.price, p.image, c.name AS category_name
+        $query = "SELECT p.id, p.name, p.description, p.price, c.name AS category_name
                   FROM " . $this->table_name . " p
                   LEFT JOIN category c ON p.category_id = c.id
                   ORDER BY p.id ASC";
@@ -53,8 +53,8 @@ class ProductModel
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
-    // Thêm sản phẩm, có ảnh chính
-    public function addProduct($name, $description, $price, $category_id, $image = null)
+    // Thêm sản phẩm
+    public function addProduct($name, $description, $price, $category_id)
     {
         $errors = [];
 
@@ -79,8 +79,8 @@ class ProductModel
         }
 
         $query = "INSERT INTO " . $this->table_name . "
-                  (name, description, price, image, category_id)
-                  VALUES (:name, :description, :price, :image, :category_id)";
+                  (name, description, price, category_id)
+                  VALUES (:name, :description, :price, :category_id)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -92,35 +92,24 @@ class ProductModel
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':description', $description);
         $stmt->bindParam(':price', $price);
-        $stmt->bindParam(':image', $image);
         $stmt->bindParam(':category_id', $category_id);
 
-            if ($stmt->execute()) {
-                return $this->conn->lastInsertId();
-            }
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
+        }
 
         return false;
     }
 
     // Sửa sản phẩm
-    public function updateProduct($id, $name, $description, $price, $category_id, $image = null)
+    public function updateProduct($id, $name, $description, $price, $category_id)
     {
-        if ($image) {
-            $query = "UPDATE " . $this->table_name . "
-                      SET name = :name,
-                          description = :description,
-                          price = :price,
-                          image = :image,
-                          category_id = :category_id
-                      WHERE id = :id";
-        } else {
-            $query = "UPDATE " . $this->table_name . "
-                      SET name = :name,
-                          description = :description,
-                          price = :price,
-                          category_id = :category_id
-                      WHERE id = :id";
-        }
+        $query = "UPDATE " . $this->table_name . "
+                  SET name = :name,
+                      description = :description,
+                      price = :price,
+                      category_id = :category_id
+                  WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
 
@@ -134,10 +123,6 @@ class ProductModel
         $stmt->bindParam(':description', $description);
         $stmt->bindParam(':price', $price);
         $stmt->bindParam(':category_id', $category_id);
-
-        if ($image) {
-            $stmt->bindParam(':image', $image);
-        }
 
         return $stmt->execute();
     }

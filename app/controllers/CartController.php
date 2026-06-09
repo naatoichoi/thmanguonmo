@@ -18,9 +18,16 @@ class CartController
         $this->cartModel = new CartModel();
     }
 
+private function isUserLoggedIn()
+{
+    SessionHelper::start();
+
+    return isset($_SESSION['user_id']);
+}
+
     public function index()
     {
-        if (!SessionHelper::isLoggedIn()) {
+        if (!$this->isUserLoggedIn()) {
             header('Location: /Account/login');
             exit;
         }
@@ -33,8 +40,9 @@ class CartController
 
     public function add($productId)
     {
-        if (!SessionHelper::isLoggedIn()) {
-            header('Location: /Account/login');
+        if (!$this->isUserLoggedIn()) {
+            http_response_code(401);
+            echo json_encode(['message' => 'Unauthorized']);
             exit;
         }
 
@@ -42,12 +50,15 @@ class CartController
         $product = $this->productModel->getProductById($productId);
 
         if (!$product) {
-            die('Sản phẩm không tồn tại');
+            http_response_code(404);
+            echo json_encode(['message' => 'Product not found']);
+            exit;
         }
 
         $this->cartModel->addToCart($productId, 1);
 
-        header('Location: /Cart/index');
+        header('Content-Type: application/json');
+        echo json_encode(['message' => 'Product added to cart', 'success' => true]);
         exit();
     }
 
